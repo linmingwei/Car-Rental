@@ -33,7 +33,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public Booking bookCar(Long carId, LocalDate startDate, LocalDate endDate) {
+    public synchronized Booking bookCar(Long carId, LocalDate startDate, LocalDate endDate) {
         Car car = bookingMapper.getCarById(carId);
         if (Objects.isNull(car)) {
             throw new IllegalArgumentException("Car with id " + carId + " does not exist");

@@ -3,6 +3,7 @@ package com.example.carrental.entity;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
