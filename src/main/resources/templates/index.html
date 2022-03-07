@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://qidian.gtimg.com/lulu/edge/css/common/ui.css">
+    <title>Title</title>
+</head>
+<body>
+<h1>Car Rental Platform</h1>
+<h2>Customer: <span th:text="${customer.username}"></span></h2>
+<div class="ui-tab-tabs">
+    <ui-tab target="booking-menu" name="tabgroup" class="ui-tab-tab" open>Booking Menu</ui-tab>
+    <ui-tab target="my-bookings" name="tabgroup" class="ui-tab-tab" onclick="loadBookings()">My Bookings</ui-tab>
+</div>
+<div class="ui-tab-contents">
+    <div id="booking-menu" class="ui-tab-content active">
+
+        <h3> please select bookings date: </h3>
+        <div id="getCarsForm">
+            <span>start date:</span> <input type="date" name="startDate" id="sdinput" value="2022-03-26">
+            <span>end date:</span> <input type="date" name="endDate" id="edinput" value="2022-03-29">
+            <button type="primary" class="ui-button" onclick="loadCars()">query</button>
+        </div>
+
+        <div class="table-x">
+            <table id="carsTable" is="ui-table">
+                <thead>
+                <tr>
+                    <th>Car ID</th>
+                    <th>Car Model</th>
+                    <th>Rent Price</th>
+                    <th>Operation</th>
+
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <!--            <div class="table-null-x" style="display: flex;">暂无数据</div>-->
+        </div>
+    </div>
+    <div id="my-bookings" class="ui-tab-content">
+        <div class="table-x">
+            <table id="bookingsTable" is="ui-table">
+                <thead>
+                <tr>
+                    <th>Car ID</th>
+                    <th>Car Model</th>
+                    <th>Total Rent</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Operation</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="https://qidian.gtimg.com/lulu/edge/js/common/all.js"></script>
+<script>
+
+    const carsTable = document.getElementById('carsTable');
+    const bookingsTable = document.getElementById('bookingsTable');
+
+
+    function loadCars() {
+        const sd = document.getElementById('sdinput').value;
+        const ed = document.getElementById('edinput').value;
+        console.log(sd, ed);
+        fetch('/v1/cars?startDate=' + sd + '&endDate=' + ed).then(response => response.json())
+            .then(data => {
+                console.log(data);
+                const old = carsTable.querySelector('tbody');
+                if (old != null) carsTable.removeChild(old);
+                if (data.error != null) {
+                    // lightTip.error(data.error);
+                    // alert(data.error);
+                    new LightTip(data.error, 2000, 'error');
+                } else {
+                    const tbody = document.createElement('tbody');
+                    data.data.forEach(obj => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                <td>${obj.id}</td>
+                <td>${obj.carModel}</td>
+                <td>${obj.rentPrice}</td>
+                <td><button type="success" class="ui-button" onclick="bookCar(${obj.id}, '${sd}', '${ed}')">Book</button></td>
+                `;
+                        tbody.appendChild(tr);
+                    });
+                    carsTable.appendChild(tbody);
+                }
+            })
+        return false;
+    }
+
+    function bookCar(carId, sd, ed) {
+        console.log(carId, sd, ed);
+        fetch('/v1/bookings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                carId: carId,
+                startDate: sd,
+                endDate: ed
+            })
+        }).then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (!data.error) {
+                    new LightTip('Book success', 2000, 'success');
+
+                }
+                loadCars();
+            })
+    }
+
+    function loadBookings() {
+        fetch('/v1/bookings?customerId=1').then(response => response.json())
+            .then(data => {
+                console.log(data);
+                const old = bookingsTable.querySelector('tbody');
+                if (old != null) bookingsTable.removeChild(old);
+                if (data.error != null) {
+                    new LightTip(data.error, 2000, 'error');
+                    return;
+                }
+                const tbody = document.createElement('tbody');
+
+                data.data.forEach(obj => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                <td>${obj.carId}</td>
+                <td>${obj.carModel}</td>
+                <td>${obj.totalRent}</td>
+                <td>${obj.startDate}</td>
+                <td>${obj.endDate}</td>
+                <td><button type="danger" class="ui-button" onclick="cancelBooking(${obj.id})">Cancel</button></td>
+                `;
+                    tbody.appendChild(tr);
+                });
+                bookingsTable.appendChild(tbody);
+            })
+        return false;
+    }
+
+    function cancelBooking(bookingId) {
+        console.log(bookingId);
+        fetch('/v1/bookings/' + bookingId, {
+            method: 'DELETE'
+        }).then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (!data.error) {
+                    new LightTip('Cancel Success', 2000, 'success');
+                }
+                loadBookings();
+            })
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.carrental.mapper.BookingMapper">
+    <select id="getAvailableCarsByDate" resultType="car">
+        SELECT c.id, c.car_model, c.rent_price, c.status
+        FROM car c
+                 LEFT JOIN (SELECT id, car_id
+                            FROM booking
+                            WHERE status > 0 AND ((#{startDate} &lt;= start_date AND start_date &lt;= #{endDate}) OR
+                                  (#{startDate} &lt;= end_date AND end_date &lt;= #{endDate}) OR
+                                  (#{startDate} &gt;= start_date AND #{endDate} &lt;= end_date))) b ON c.id = b.car_id
+        WHERE b.car_id IS NULL AND c.status > 0
+    </select>
+    <insert id="bookCar" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        INSERT INTO booking (car_id, customer_id, customer_name, start_date, end_date, status, car_model, total_rent)
+        VALUES (#{booking.carId}, #{booking.customerId}, #{booking.customerName}, #{booking.startDate},
+                #{booking.endDate}, 1, #{booking.carModel}, #{booking.totalRent})
+    </insert>
+    <select id="getCarById" resultType="car">
+        SELECT id, car_model, rent_price, status
+        FROM car
+        WHERE id = #{carId} AND status > 0
+    </select>
+    <update id="cancelBooking">
+        UPDATE booking
+        SET status = -1
+        WHERE id = #{bookingId}
+    </update>
+
+    <select id="getBookings" resultType="booking">
+        SELECT id, customer_id, customer_name, car_id, car_model, start_date, end_date, total_rent, status
+        FROM booking
+        WHERE status > 0
+        <if test="booking.id != null ">
+            AND id = #{booking.id}
+        </if>
+        <if test="booking.customerId != null ">
+            AND customer_id = #{booking.customerId}
+        </if>
+        <if test="booking.startDate != null and booking.endDate != null ">
+            AND ((#{booking.startDate} &lt;= start_date AND start_date &lt;= #{booking.endDate}) OR
+            (#{booking.startDate} &lt;= end_date AND end_date &lt;= #{booking.endDate}) OR
+            (#{booking.startDate} &gt;= start_date AND #{booking.endDate} &lt;= end_date))
+        </if>
+        <if test="booking.carId != null">
+            AND car_id = #{booking.carId}
+        </if>
+    </select>
+</mapper>
